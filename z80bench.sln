@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30225.117
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "z80bench", "z80bench.csproj", "{E3BBA7C0-A604-47BE-A359-40D997596893}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E3BBA7C0-A604-47BE-A359-40D997596893}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3BBA7C0-A604-47BE-A359-40D997596893}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3BBA7C0-A604-47BE-A359-40D997596893}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3BBA7C0-A604-47BE-A359-40D997596893}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {58A71554-C732-44FA-99F1-B01EDC2D7BE7}
+	EndGlobalSection
+EndGlobal
