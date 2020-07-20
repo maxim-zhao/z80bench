@@ -3,6 +3,8 @@ Program to benchmark Z80 code, especially for Master System
 
 # Usage
 
+This program needs to run against the .Net Framework. It may work in Mono but it's untested.
+
 Compile some code. End it with a dangling `ret` to signal when it's done. 
 
 ```
