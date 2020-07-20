@@ -1,34 +1,96 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Text.RegularExpressions;
 using Konamiman.Z80dotNet;
 
 namespace z80bench
 {
     class Z80Bench
     {
+        private class FileWithOffset
+        {
+            public FileWithOffset(string arg)
+            {
+                var match = Regex.Match(arg, "^(?<filename>[^@]+)(@(?<offset>[0-9a-fA-F]+))?$");
+                if (!match.Success)
+                {
+                    throw new ArgumentException($"Could not parse parameter \"{arg}\"");
+                }
+
+                Filename = match.Groups["filename"].Value;
+                if (match.Groups["offset"].Success)
+                {
+                    Offset = Convert.ToInt32(match.Groups["offset"].Value, 16);
+                }
+                else
+                {
+                    Offset = 0;
+                }
+            }
+
+            public int Offset { get;  }
+
+            public string Filename { get;  }
+        }
+
         static int Main(string[] args)
         {
             if (args.Length < 1)
             {
                 // Print usage
-                Console.WriteLine("Usage: z80bench <program file> [data file] [expected VRAM file]");
-                Console.WriteLine("- Program file will be executed at address $0000. It should end with a ret. No interrupts will happen.");
-                Console.WriteLine("- Data file will be inserted at address $4000 if given");
-                Console.WriteLine("- VRAM contents will be compared to the expected VRAM file if given");
+                Console.WriteLine("Usage: z80bench <program file>[@offset] [filename[@offset]] ... [--execute offset] [--stack-pointer offset] [--vram-compare filename[@offset]] ");
+                Console.WriteLine("- Files will be inserted at the offset given, or $0000 if missing.");
+                Console.WriteLine("- Program should end with a ret. No interrupts will happen.");
+                Console.WriteLine("- Default program start address is $0000");
+                Console.WriteLine("- Default stack pointer is $dff0");
+                Console.WriteLine("- All offsets are bare hex, e.g. \"program.sms@0000\"");
+                Console.WriteLine("- VRAM contents at the given address will be compared to the expected VRAM file. Program will return 0 if the data matches.");
                 return -1;
             }
 
             var emulator = new Z80Processor();
-            // The first parameter is the program to run. We put it at location 0.
-            emulator.Memory.SetContents(0, File.ReadAllBytes(args[0]));
-            int dataLength = 0;
-            if (args.Length > 1)
+
+            var startOffset = 0;
+            var stackOffset = 0xdff0;
+            var vramCompares = new List<FileWithOffset>();
+            for (int i = 0; i < args.Length; ++i)
             {
-                // The second parameter is the data. We assume we can put it at 16KB.
-                var data = File.ReadAllBytes(args[1]);
-                dataLength = data.Length;
-                emulator.Memory.SetContents(0x4000, data);
+                if (args[i].StartsWith("--"))
+                {
+                    // Program option
+                    var option = args[i].Substring(2);
+                    if (++i >= args.Length)
+                    {
+                        // No space for arg
+                        Console.Error.WriteLine($"Missing value for final parameter --{option}");
+                        return -1;
+                    }
+
+                    switch (option.ToLowerInvariant())
+                    {
+                        case "execute":
+                            startOffset = Convert.ToInt32(args[i], 16);
+                            break;
+                        case "stack-pointer":
+                            stackOffset = Convert.ToInt32(args[i], 16);
+                            break;
+                        case "vram-compare":
+                            vramCompares.Add(new FileWithOffset(args[i]));
+                            break;
+                        default:
+                            Console.Error.WriteLine($"Unknown parameter --{option}");
+                            return -1;
+                    }
+                }
+                else
+                {
+                    // Program or data
+                    var data = new FileWithOffset(args[i]);
+                    emulator.Memory.SetContents(data.Offset, File.ReadAllBytes(data.Filename));
+                }
             }
 
             emulator.MemoryAccess += OnMemoryAccess;
@@ -37,7 +99,9 @@ namespace z80bench
             emulator.AutoStopOnRetWithStackEmpty = true;
             emulator.InterruptMode = 1;
             emulator.Reset();
-            emulator.Registers.SP = 0xdff0 - 0x10000; // Need to supply it as signed short, this is the equivalent 
+            // ReSharper disable once IntVariableOverflowInUncheckedContext
+            emulator.Registers.SP = (short) stackOffset;
+            emulator.Registers.PC = (ushort) startOffset;
 
             var sw = Stopwatch.StartNew();
             emulator.Start();
@@ -50,13 +114,13 @@ namespace z80bench
             }
 
             int mismatches = 0;
-            if (args.Length > 2)
+            foreach (var comparison in vramCompares)
             {
-                // We then compare VRAM to the file passed third, to confirm correctness
-                var expectedData = File.ReadAllBytes(args[2]);
+                // We then compare VRAM to the file passed, to confirm correctness
+                var expectedData = File.ReadAllBytes(comparison.Filename);
                 for (int i = 0; i < expectedData.Length; ++i)
                 {
-                    if (expectedData[i] != Vdp.Vram[i])
+                    if (expectedData[i] != Vdp.Vram[i + comparison.Offset])
                     {
                         if (mismatches == 0)
                         {
@@ -69,15 +133,10 @@ namespace z80bench
                         ++mismatches;
                     }
                 }
-
-                if (mismatches == 0)
-                {
-                    Console.WriteLine("VRAM comparison: pass");
-                }
-
-                Console.WriteLine($"Compression level is 1:{(double)expectedData.Length / dataLength:N2} = {(double)(expectedData.Length - dataLength) / expectedData.Length:P1} compression");
-                Console.WriteLine($"Data rate is {(double)expectedData.Length / counter.Cycles * 59736:N2} bytes per frame at NTSC timings");
-
+            }
+            if (mismatches == 0 && vramCompares.Count > 0)
+            {
+                Console.WriteLine("VRAM comparison: pass");
             }
 
             Console.WriteLine($"Executed {counter.Cycles} cycles in {sw.Elapsed}");
