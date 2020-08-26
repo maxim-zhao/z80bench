@@ -3,51 +3,26 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Text.RegularExpressions;
+using System.Text;
 using Konamiman.Z80dotNet;
 
 namespace z80bench
 {
     class Z80Bench
     {
-        private class FileWithOffset
-        {
-            public FileWithOffset(string arg)
-            {
-                var match = Regex.Match(arg, "^(?<filename>[^@]+)(@(?<offset>[0-9a-fA-F]+))?$");
-                if (!match.Success)
-                {
-                    throw new ArgumentException($"Could not parse parameter \"{arg}\"");
-                }
-
-                Filename = match.Groups["filename"].Value;
-                if (match.Groups["offset"].Success)
-                {
-                    Offset = Convert.ToInt32(match.Groups["offset"].Value, 16);
-                }
-                else
-                {
-                    Offset = 0;
-                }
-            }
-
-            public int Offset { get;  }
-
-            public string Filename { get;  }
-        }
-
         static int Main(string[] args)
         {
             if (args.Length < 1)
             {
                 // Print usage
-                Console.WriteLine("Usage: z80bench <program file>[@offset] [filename[@offset]] ... [--execute offset] [--stack-pointer offset] [--vram-compare filename[@offset]] ");
-                Console.WriteLine("- Files will be inserted at the offset given, or $0000 if missing.");
-                Console.WriteLine("- Program should end with a ret. No interrupts will happen.");
-                Console.WriteLine("- Default program start address is $0000");
-                Console.WriteLine("- Default stack pointer is $dff0");
-                Console.WriteLine("- All offsets are bare hex, e.g. \"program.sms@0000\"");
-                Console.WriteLine("- VRAM contents at the given address will be compared to the expected VRAM file. Program will return 0 if the data matches.");
+                Console.WriteLine("Usage: z80bench <filename@offset> [additional files] [options]");
+                Console.WriteLine("Filenames will be inserted into Z80 address space at the address given, or 0 if unspecified.");
+                Console.WriteLine("You should load some code at a suitable address, and end with ret. No interrupts will happen.");
+                Console.WriteLine("Options:");
+                Console.WriteLine("--execute <offset>                   Start execution at the given offset (hex). Default is 0.");
+                Console.WriteLine("--stack-pointer <offset>             Set the stack pointer to the given offset (hex). Default is dff0.");
+                Console.WriteLine("--max-cycles <count>                 Limit Z80 execution to the given number. Default is 1e9.");
+                Console.WriteLine("--vram-compare filename[@offset]]    Compare an emulated Sega 8-bit system's VRAM at the given offset to the specified file");
                 return -1;
             }
 
@@ -55,6 +30,7 @@ namespace z80bench
 
             var startOffset = 0;
             var stackOffset = 0xdff0;
+            var maxCycles = 1_000_000_000; // 4.1 minutes at 4MHz
             var vramCompares = new List<FileWithOffset>();
             for (int i = 0; i < args.Length; ++i)
             {
@@ -80,6 +56,9 @@ namespace z80bench
                         case "vram-compare":
                             vramCompares.Add(new FileWithOffset(args[i]));
                             break;
+                        case "max-cycles":
+                            maxCycles = Convert.ToInt32(args[i]);
+                            break;
                         default:
                             Console.Error.WriteLine($"Unknown parameter --{option}");
                             return -1;
@@ -94,7 +73,7 @@ namespace z80bench
             }
 
             emulator.MemoryAccess += OnMemoryAccess;
-            var counter = new CycleCountingClockSynchronizer(emulator);
+            var counter = new CycleCountingClockSynchronizer(emulator, maxCycles);
             emulator.ClockSynchronizer = counter;
             emulator.AutoStopOnRetWithStackEmpty = true;
             emulator.InterruptMode = 1;
@@ -144,114 +123,6 @@ namespace z80bench
             return mismatches;
         }
 
-        private class CycleCountingClockSynchronizer : IClockSynchronizer
-        {
-            private readonly Z80Processor _emulator;
-
-            public CycleCountingClockSynchronizer(Z80Processor emulator)
-            {
-                _emulator = emulator;
-            }
-
-            public void Start()
-            {
-            }
-
-            public void Stop()
-            {
-            }
-
-            public void TryWait(int periodLengthInCycles)
-            {
-                Cycles += periodLengthInCycles;
-                if (Cycles > 1_000_000_000_000)
-                {
-                    // Probably going on too long
-                    _emulator.Stop();
-                }
-            }
-
-            public long Cycles { get; private set; }
-
-            public decimal EffectiveClockFrequencyInMHz { get; set; }
-        }
-
-        private class VDP
-        {
-            private bool _latched;
-            public byte[] Vram { get; } = new byte[0x4000];
-            private int _address;
-
-            private enum Mode
-            {
-                Read = 0,
-                Write = 1,
-                RegisterWrite = 2,
-                PaletteWrite = 3
-            }
-            private Mode _mode;
-            private byte _readBuffer;
-
-            public byte ReadData()
-            {
-                // Every time the data port is read (regardless
-                // of the code register) the contents of a buffer are returned. The VDP will
-                // then read a byte from VRAM at the current address, and increment the address
-                // register. In this way data for the next data port read is ready with no
-                // delay while the VDP reads VRAM. 
-                var value = _readBuffer;
-                BufferRead();
-                return value;
-            }
-
-            public void WriteData(byte value)
-            {
-                if (_mode == Mode.Write)
-                {
-                    Vram[_address++] = value;
-                    _address &= 0x3fff;
-                }
-                // An additional quirk is that writing to the
-                // data port will also load the buffer with the value written.
-                _readBuffer = value;
-            }
-
-            public void WriteControl(byte value)
-            {
-                if (!_latched)
-                {
-                    // First byte
-                    // Update address immediately
-                    _address &= 0b111111_00000000;
-                    _address |= value;
-                    // Set latch
-                    _latched = true;
-                }
-                else
-                {
-                    // Second byte
-                    // Apply bits to address
-                    _address &= 0b000000_11111111;
-                    _address |= (value & 0b111111) << 8;
-                    // Clear latch
-                    _latched = false;
-                    // Set mode
-                    _mode = (Mode) (value >> 6);
-                    // Pre-buffer on read
-                    if (_mode == Mode.Read)
-                    {
-                        BufferRead();
-                    }
-                }
-            }
-
-            private void BufferRead()
-            {
-                _readBuffer = Vram[_address++];
-                _address &= 0x3fff;
-            }
-        }
-
         private static readonly VDP Vdp = new VDP();
 
         private const ushort PortVdpData = 0xbe;
@@ -265,6 +136,11 @@ namespace z80bench
                     if (e.Address == PortVdpData)
                     {
                         e.Value = Vdp.ReadData();
+                        e.CancelMemoryAccess = true;
+                    }
+                    else if (e.Address == PortVdpControl)
+                    {
+                        e.Value = Vdp.ReadControl();
                         e.CancelMemoryAccess = true;
                     }
                     break;
