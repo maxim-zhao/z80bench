@@ -1,0 +1,10 @@
+version: 0.0.{build}
+image: Visual Studio 2019
+configuration: Release
+platform: AnyCPU
+build:
+  verbosity: minimal
+after_build:
+- cmd: 7z a z80bench.zip bin\release\*.exe bin\release\*.dll readme.md
+artifacts:
+- path: '*.zip'
