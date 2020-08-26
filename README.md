@@ -21,9 +21,9 @@ $ z80bench test-program.sms@0000 data.dat@4000
 Executed 136170 cycles in 00:00:00.0131959
 ```
 
-The data is inserted at offset 0x4000. In fact, all filenames can be appended with an `@address` suffix, including the program filename; it's just implicitly at address 0.
+The data is inserted at offset 0x4000. In fact, all filenames can be appended with an `@address` suffix#.
 
-The specific use case for which this was written was testing and measuring depackers to VRAM. Pass `--vram-compare` to comapre the VRAM contents:
+The specific use case for which this was written was testing and measuring depackers to VRAM for Sega 8-bit systems (which map a TMS9918a-like VDP to I/O ports $be and $bf). Pass `--vram-compare` to compare the VRAM contents:
 
 ```
 $ z80bench test-program.sms --vram-compare expected.bin@0000
