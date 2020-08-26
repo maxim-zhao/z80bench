@@ -1,6 +1,10 @@
 # z80bench
 Program to benchmark Z80 code, especially for Master System
 
+[![Build status](https://ci.appveyor.com/api/projects/status/00jwpyp7n2n3qfeo?svg=true)](https://ci.appveyor.com/project/maxim-zhao/z80bench)
+
+[Download binaries at AppVeyor](https://ci.appveyor.com/project/maxim-zhao/z80bench/build/artifacts)
+
 # Usage
 
 This program needs to run against the .Net Framework. It may work in Mono but it's untested.
