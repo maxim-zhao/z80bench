@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Text;
 using Konamiman.Z80dotNet;
 
 namespace z80bench
