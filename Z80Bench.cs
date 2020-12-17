@@ -6,9 +6,9 @@ using Konamiman.Z80dotNet;
 
 namespace z80bench
 {
-    class Z80Bench
+    public class Z80Bench
     {
-        static int Main(string[] args)
+        public static int Main(string[] args)
         {
             if (args.Length < 1)
             {
