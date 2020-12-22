@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.30225.117
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "z80bench", "z80bench.csproj", "{E3BBA7C0-A604-47BE-A359-40D997596893}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "z80benchtests", "tests\z80benchtests\z80benchtests.csproj", "{0549E698-82B3-40B2-900F-1BC987D94739}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "z80bench.tests", "tests\z80benchtests\z80bench.tests.csproj", "{0549E698-82B3-40B2-900F-1BC987D94739}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,6 +1,6 @@
 ﻿namespace z80bench
 {
-    internal class VDP
+    internal class Vdp
     {
         private bool _latched;
         public byte[] Vram { get; } = new byte[0x4000];
@@ -10,8 +10,8 @@
         {
             Read = 0,
             Write = 1,
-            RegisterWrite = 2,
-            PaletteWrite = 3
+            // RegisterWrite = 2,
+            // PaletteWrite = 3
         }
         private Mode _mode;
         private byte _readBuffer;

@@ -43,7 +43,7 @@
   <ItemGroup>
     <Compile Include="CycleCountingClockSynchronizer.cs" />
     <Compile Include="FileWithOffset.cs" />
-    <Compile Include="VDP.cs" />
+    <Compile Include="Vdp.cs" />
     <Compile Include="Z80Bench.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

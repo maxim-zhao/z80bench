@@ -121,7 +121,7 @@ namespace z80bench
             return mismatches;
         }
 
-        private static readonly VDP Vdp = new VDP();
+        private static readonly Vdp Vdp = new Vdp();
 
         private const ushort PortVdpData = 0xbe;
         private const ushort PortVdpControl = 0xbf;
