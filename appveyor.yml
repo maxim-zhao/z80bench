@@ -11,3 +11,5 @@ after_build:
 - cmd: 7z a z80bench.zip bin\release\*.exe bin\release\*.dll readme.md
 artifacts:
 - path: '*.zip'
+test_script:
+- cmd: dotnet test --test-adapter-path:. --logger:Appveyor
