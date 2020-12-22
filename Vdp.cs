@@ -1,9 +1,12 @@
 ﻿namespace z80bench
 {
+    /// <summary>
+    /// Emulates very little of the Sega VDP as fond in the Sega Master System and related consoles.
+    /// All we do here is implement the ability to read and write VRAM.
+    /// </summary>
     internal class Vdp
     {
         private bool _latched;
-        public byte[] Vram { get; } = new byte[0x4000];
         private int _address;
 
         private enum Mode
@@ -15,6 +18,11 @@
         }
         private Mode _mode;
         private byte _readBuffer;
+
+        /// <summary>
+        /// The contents of video memory
+        /// </summary>
+        public byte[] Vram { get; } = new byte[0x4000];
 
         public byte ReadData()
         {

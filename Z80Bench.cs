@@ -6,7 +6,7 @@ using Konamiman.Z80dotNet;
 
 namespace z80bench
 {
-    public class Z80Bench
+    public static class Z80Bench
     {
         public static int Main(string[] args)
         {
@@ -24,6 +24,7 @@ namespace z80bench
                 return -1;
             }
 
+            // Parse the parameters
             var emulator = new Z80Processor();
 
             var startOffset = 0;
@@ -70,6 +71,7 @@ namespace z80bench
                 }
             }
 
+            // Configure the CPU emulator...
             emulator.MemoryAccess += OnMemoryAccess;
             var counter = new CycleCountingClockSynchronizer(emulator, maxCycles);
             emulator.ClockSynchronizer = counter;
