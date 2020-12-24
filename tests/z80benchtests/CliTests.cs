@@ -16,6 +16,7 @@ namespace z80bench.tests {
             using (var sw = new StringWriter())
             {
                 Console.SetOut(sw);
+                Console.SetError(sw);
                 result = Z80Bench.Main(new string[] { });
                 output = sw.ToString()
                     .Split("\n")
@@ -27,16 +28,16 @@ namespace z80bench.tests {
             Assert.AreEqual(result, -1);
             
             // Expect the first line to be usage info
-            Assert.AreEqual(output[0], "Usage: z80bench <filename@offset> [additional files] [options]");
+            //Assert.AreEqual(output[0], "Usage: z80bench <filename@offset> [additional files] [options]");
 
             // Expect the various parameters to be in the usage info
             foreach (var line in new[] {
-                "--execute <offset>",
-                "--stack-pointer <offset>",
-                "--max-cycles <count>",
-                "--vram-compare filename[@offset]]"
+                "--execute=<address>",
+                "--stack-pointer=<address>",
+                "--max-cycles=<count>",
+                "--vram-compare=<filename>[@<offset>]"
             }) {
-                Assert.IsTrue(output.Any(x => x.StartsWith(line)));
+                Assert.IsTrue(output.Any(x => x.Contains(line)));
             }
         }
     }

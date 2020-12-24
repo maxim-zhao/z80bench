@@ -33,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CommandLine, Version=2.8.0.0, Culture=neutral, PublicKeyToken=5a870481e358d379, processorArchitecture=MSIL">
+      <HintPath>packages\CommandLineParser.2.8.0\lib\net461\CommandLine.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
@@ -41,8 +44,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Benchmark.cs" />
+    <Compile Include="BenchmarkRunner.cs" />
     <Compile Include="CycleCountingClockSynchronizer.cs" />
-    <Compile Include="FileWithOffset.cs" />
     <Compile Include="Vdp.cs" />
     <Compile Include="Z80Bench.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

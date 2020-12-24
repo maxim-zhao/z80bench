@@ -9,9 +9,9 @@ namespace z80bench
     internal class CycleCountingClockSynchronizer : IClockSynchronizer
     {
         private readonly Z80Processor _emulator;
-        private readonly int _maxCycles;
+        private readonly long _maxCycles;
 
-        public CycleCountingClockSynchronizer(Z80Processor emulator, int maxCycles)
+        public CycleCountingClockSynchronizer(Z80Processor emulator, long maxCycles)
         {
             _emulator = emulator;
             _maxCycles = maxCycles;
