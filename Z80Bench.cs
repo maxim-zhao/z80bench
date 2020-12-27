@@ -2,41 +2,97 @@
 using System.Collections.Generic;
 using System.Linq;
 using CommandLine;
+using CommandLine.Text;
 
 namespace z80bench
 {
-    public class Z80Bench
+    public static class Z80Bench
     {
+        // ReSharper disable once ClassNeverInstantiated.Global
+        // ReSharper disable UnusedAutoPropertyAccessor.Global
         public class Options
         {
-            [Value(0, Required = true, MetaName = "(files)", MetaValue = "<filename>[@<offset>]", HelpText = "Filenames with an optional hex address after an @ sign. Data will be inserted into Z80 address space at the address given, or 0 if unspecified.")]
+            [Value(0, 
+                Required = true, 
+                Hidden = true,
+                MetaName = "(files)", 
+                MetaValue = "<filename>[@<offset>]")]
             public IEnumerable<string> Files { get; set; }
-            [Option('e', "execute", MetaValue = "<address>", Required = false, HelpText = "Start execution at the given offset (hex)", Default = "0")]
+
+            [Option('e', "execute", 
+                MetaValue = "<address>", 
+                Required = false,
+                HelpText = "Start execution at the given offset (hex)", 
+                Default = "0")]
             public string ExecutionAddress { get; set; }
-            [Option('s', "stack-pointer", MetaValue = "<address>", Required = false, HelpText = "Set the stack pointer to the given offset (hex)", Default = "dff0")]
+
+            [Option('s', "stack-pointer", 
+                MetaValue = "<address>", 
+                Required = false,
+                HelpText = "Set the stack pointer to the given offset (hex)", 
+                Default = "dff0")]
             public string StackPointer { get; set; }
-            [Option('m', "max-cycles", MetaValue = "<count>", Required = false, HelpText = "Limit Z80 execution to the given number of CPU cycles", Default = 1_000_000_000)]
+
+            [Option('m', "max-cycles", 
+                MetaValue = "<count>", 
+                Required = false,
+                HelpText = "Limit Z80 execution to the given number of CPU cycles", 
+                Default = 1_000_000_000)]
             public long MaxCycles { get; set; }
-            [Option('v', "vram-compare", MetaValue = "<filename>[@<offset>]", Required = false, HelpText = "Compare VRAM contents to the given file with optional offset. More than one may be specified.")]
+
+            [Option('v', "vram-compare", 
+                MetaValue = "<filename>[@<offset>]", 
+                Required = false,
+                HelpText = "Compare VRAM contents to the given file with optional offset. More than one may be specified.")]
             public IEnumerable<string> VramComparisons { get; set; }
-            [Option('r', "ram-compare", MetaValue = "<filename>[@<offset>]", Required = false, HelpText = "Compare RAM contents to the given file with optional offset. More than one may be specified.")]
+
+            [Option('r', "ram-compare", 
+                MetaValue = "<filename>[@<offset>]", 
+                Required = false,
+                HelpText = "Compare RAM contents to the given file with optional offset. More than one may be specified.")]
             public IEnumerable<string> RamComparisons { get; set; }
         }
+        // ReSharper restore UnusedAutoPropertyAccessor.Global
 
         public static int Main(string[] args)
         {
-            return Parser.Default.ParseArguments<Options>(args)
-                .MapResult(
-                    Run,
-                    errors =>
-                    {
-                        foreach (var error in errors)
-                        {
-                            Console.Error.WriteLine(error);
-                        }
+            var parser = new Parser(config =>
+            {
+                config.HelpWriter = null;
+                config.AutoVersion = false;
+            });
+            var parserResult = parser.ParseArguments<Options>(args);
 
-                        return -1;
-                    });
+            return parserResult.MapResult(Run, errors => HandleError(errors, parserResult));
+        }
+
+        private static int HandleError(IEnumerable<Error> errors, ParserResult<Options> parserResult)
+        {
+            var h = new HelpText
+            {
+                Heading = "Usage: z80bench <filename[@address]> [additional files] [options]",
+                AutoVersion = false,
+                AddDashesToOption = true
+            };
+            h.AddPreOptionsLine("Filenames will be inserted into Z80 address space at the (hex) address given, or 0 if unspecified.");
+            h.AddPreOptionsLine("You should load some code at a suitable address, and end with ret. No interrupts will happen.");
+            h.AddPreOptionsLine("");
+            h.AddPreOptionsLine("Options:");
+            h.AddOptions(parserResult);
+
+            if (!errors.IsHelp())
+            {
+                h.AddPostOptionsLine("Errors:");
+                h.AddPostOptionsLines(HelpText.RenderParsingErrorsTextAsLines(
+                    parserResult, 
+                    error => error is MissingRequiredOptionError 
+                        ? "At least one filename must be given" : 
+                        h.SentenceBuilder.FormatError(error), 
+                    h.SentenceBuilder.FormatMutuallyExclusiveSetErrors, 2));
+            }
+
+            Console.WriteLine(h);
+            return -1;
         }
 
         private static int Run(Options options)
@@ -58,7 +114,6 @@ namespace z80bench
 
                 // Return the result (0 on success)
                 return runner.RamMismatches.Count + runner.VramMismatches.Count;
-
             }
             catch (Exception ex)
             {
@@ -73,6 +128,7 @@ namespace z80bench
             {
                 return;
             }
+
             if (mismatches.Any())
             {
                 Console.WriteLine($"{description} comparison: fail");
@@ -87,7 +143,6 @@ namespace z80bench
             {
                 Console.WriteLine($"{description} comparison: pass");
             }
-
         }
     }
 }

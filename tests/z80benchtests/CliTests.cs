@@ -28,7 +28,7 @@ namespace z80bench.tests {
             Assert.AreEqual(result, -1);
             
             // Expect the first line to be usage info
-            //Assert.AreEqual(output[0], "Usage: z80bench <filename@offset> [additional files] [options]");
+            Assert.AreEqual(output[0], "Usage: z80bench <filename[@address]> [additional files] [options]");
 
             // Expect the various parameters to be in the usage info
             foreach (var line in new[] {
