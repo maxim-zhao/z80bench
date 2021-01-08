@@ -1,25 +1,31 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace z80bench.tests {
+namespace z80bench.tests
+{
     [TestClass]
-    public class BenchmarkRunnerTests {
+    public class BenchmarkRunnerTests
+    {
         [TestMethod]
-        [ExpectedException(typeof(Exception), "Emulator stopped due to running for too long")]
-        public void ThrowsExceptionWhenOverMaxCycles() {
-            var benchmark = new Benchmark();
-            var data = new z80bench.Benchmark.Data();
-            var memory = new List<Benchmark.Data>();
-            data.Values = new byte[6] { 0x3E, 0x07, 0xC6, 0x04, 0x3C, 0xC9 };
-            data.Offset = 0;
-            memory.Add(data);
+        public void ThrowsExceptionWhenOverMaxCycles()
+        {
+            var benchmark = new Benchmark
+            {
+                Memory = new[]
+                {
+                    new Benchmark.Data
+                    {
+                        // ld a,7; add a,4; inc a; ret
+                        // Total 7 + 7 + 4 + 10 = 28 cycles
+                        Values = new byte[] {0x3E, 0x07, 0xC6, 0x04, 0x3C, 0xC9}, Offset = 0
+                    }
+                },
+                MaxCycles = 27
+            };
 
-            benchmark.MaxCycles = 1;
-            benchmark.Memory = memory;
-
-            new BenchmarkRunner(benchmark);
+            Assert.ThrowsException<Exception>(() => new BenchmarkRunner(benchmark));
+            benchmark.MaxCycles = 28;
+            Assert.AreEqual(28, new BenchmarkRunner(benchmark).Cycles);
         }
     }
 }
