@@ -68,6 +68,7 @@ namespace z80bench
 
         private static int HandleError(IEnumerable<Error> errors, ParserResult<Options> parserResult)
         {
+            // We replace CommandLine's default error/help implementation to gain some extra control over its formatting...
             var h = new HelpText
             {
                 Heading = "Usage: z80bench <filename[@address]> [additional files] [options]",
@@ -80,7 +81,7 @@ namespace z80bench
             h.AddPreOptionsLine("Options:");
             h.AddOptions(parserResult);
 
-            if (!errors.IsHelp())
+            if (!errors.All(x => x is HelpRequestedError))
             {
                 h.AddPostOptionsLine("Errors:");
                 h.AddPostOptionsLines(HelpText.RenderParsingErrorsTextAsLines(
